@@ -1,0 +1,1 @@
+# csgo-fake-opening

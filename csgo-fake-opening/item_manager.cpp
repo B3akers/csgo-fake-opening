@@ -38,9 +38,14 @@ void item_manager::init( ) {
 
 		switch ( type_hash ) {
 			case FNV( "#CSGO_Type_WeaponCase" ):
-				if ( strstr( item->get_weapon_name( ), "coupon " ) != item->get_weapon_name( ) )
-					crates.push_back( item );
+			{
+				auto attributes_crate = item->get_attributes( );
+				auto supply_create_series = std::find( attributes_crate.begin( ), attributes_crate.end( ), 68 );
+				if ( supply_create_series != attributes_crate.end( ) )
+					if ( csgo_sdk::get_item_schema( )->get_create_series_by_id( supply_create_series->value ) )
+						crates.push_back( item );
 				break;
+			}
 			case FNV( "#CSGO_Tool_WeaponCase_KeyTag" ):
 				keys.push_back( item );
 				break;

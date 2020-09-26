@@ -48,7 +48,7 @@ econ_item_definition* item_schema::get_item_by_definition_index( int32_t index )
 }
 
 econ_paint_kit_definition* item_schema::get_paint_kit_by_skin_index( int32_t index ) {
-	for ( size_t i = 0; i < get_paint_kit_definition_count( ); i++ ) {
+	for ( size_t i = 0; i <= get_paint_kit_definition_count( ); i++ ) {
 		auto item = get_paint_kit_definition( i );
 		if ( item->get_paint_kit( ) == index )
 			return item;
@@ -57,7 +57,7 @@ econ_paint_kit_definition* item_schema::get_paint_kit_by_skin_index( int32_t ind
 }
 
 econ_sticker_definition* item_schema::get_sticker_by_skin_index( int32_t index ) {
-	for ( size_t i = 0; i < get_sticker_definition_count( ); i++ ) {
+	for ( size_t i = 0; i <= get_sticker_definition_count( ); i++ ) {
 		auto item = get_sticker_definition( i );
 		if ( item->get_sticker_id( ) == index )
 			return item;
@@ -117,8 +117,10 @@ void recursive_add_loot_to_loot_list( uintptr_t v2, std::vector<weapon_drop_info
 				if ( stickerkit != 0 )
 					rarity = csgo_sdk::get_item_schema( )->get_sticker_by_skin_index( stickerkit )->get_rarity( );
 				else {
-					auto item_rarity = csgo_sdk::get_item_schema( )->get_item_by_definition_index( itemdef )->get_rarity_value( );
-					auto skin_rarity = paintkit == 0 ? 0 : csgo_sdk::get_item_schema( )->get_paint_kit_by_skin_index( paintkit )->get_rarity_value( );
+					auto item_def = csgo_sdk::get_item_schema( )->get_item_by_definition_index( itemdef );
+					auto skin_def = paintkit == 0 ? nullptr : csgo_sdk::get_item_schema( )->get_paint_kit_by_skin_index( paintkit );
+					auto item_rarity = item_def ? item_def->get_rarity_value( ) : 0;
+					auto skin_rarity = skin_def ? skin_def->get_rarity_value( ) : 0;
 
 					auto skin_rarity_fixed = ( skin_rarity == 7 ) + 6;
 					rarity = item_rarity + skin_rarity - 1;
@@ -269,7 +271,7 @@ void c_player_inventory::remove_item( uint64_t id ) {
 void c_player_inventory::remove_item( c_econ_item_view* item ) {
 	auto econ_item = item->get_soc_data( );
 
-	remove_item( econ_item->get_item_id() );
+	remove_item( econ_item->get_item_id( ) );
 	get_base_type_cache( )->remove_object( econ_item );
 
 	c_econ_item::destroy( econ_item );

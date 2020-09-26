@@ -61,7 +61,7 @@ void item_manager::init( ) {
 
 	int32_t max_team_id = -1;
 	std::vector<int32_t> players_ids;
-	for ( size_t i = 0; i < item_schema->get_sticker_definition_count( ); i++ ) {
+	for ( size_t i = 0; i <= item_schema->get_sticker_definition_count( ); i++ ) {
 		auto item = item_schema->get_sticker_definition( i );
 		if ( item->get_team_id( ) > max_team_id )
 			max_team_id = item->get_team_id( );
@@ -98,7 +98,7 @@ void item_manager::init( ) {
 			continue;
 
 		V_UCS2ToUTF8( wide_name, name, sizeof( name ) );
-		csgo_players[ i ] = std::string(name) + " (" + std::string( player_data->get_player_nick( ) ) + ")";
+		csgo_players[ i ] = std::string( name ) + " (" + std::string( player_data->get_player_nick( ) ) + ")";
 	}
 }
 

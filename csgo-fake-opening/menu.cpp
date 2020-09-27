@@ -122,6 +122,79 @@ float fakeopening_chances::knife_chance = 0.2f;
 float fakeopening_chances::statstark_chance = 10.f;
 float fakeopening_chances::factory_new_chance = 14.f;
 
+void update_players( int32_t tournament_id ) {
+	csgo_players_filtered.clear( );
+	csgo_players_filtered.push_back( { 0, "None" } );
+
+	if ( tournament_id > 0 ) {
+		auto t0 = csgo_teams_filtered[ team0_tournament_crate ].first;
+		auto t1 = csgo_teams_filtered[ team1_tournament_crate ].first;
+		std::vector<int32_t> players;
+		for ( auto& sticker : item_manager::stickers ) {
+			if ( sticker->get_event_id( ) == tournament_id ) {
+				if ( sticker->get_player_id( ) > 0 && (sticker->get_team_id() == t0 || sticker->get_team_id() == t1))
+					if ( std::find( players.begin( ), players.end( ), sticker->get_player_id( ) ) == players.end( ) )
+						players.push_back( sticker->get_player_id( ) );
+			}
+		}
+
+		for ( auto id : players )
+			csgo_players_filtered.push_back( { id, item_manager::csgo_players[ id ] } );
+	}
+
+	if ( player_tournament_crate >= static_cast<int32_t>( csgo_players_filtered.size( ) ) )
+		player_tournament_crate = 0;
+}
+
+void update_teams( ) {
+	csgo_teams_filtered.clear( );
+
+	auto tournament_id_val = 0;
+
+	if ( crate_list.current_item < static_cast<int32_t>( crate_list.items_filtered.size( ) ) ) {
+		auto& crate_item = crate_list.items_filtered.at( crate_list.current_item );
+		auto attributes_crate = crate_item.item->get_attributes( );
+		auto is_tournament_crate = true;
+		auto supply_create_series = std::find( attributes_crate.begin( ), attributes_crate.end( ), 68 );
+		if ( supply_create_series != attributes_crate.end( ) ) {
+			auto name = csgo_sdk::get_item_schema( )->get_create_series_by_id( supply_create_series->value );
+			if ( name ) {
+				auto items = csgo_sdk::get_weapons_for_crate( name );
+				if ( items.front( ).sticker_id != 0 )
+					is_tournament_crate = false;
+			}
+		}
+
+		if ( is_tournament_crate ) {
+			auto tournament_id = std::find( attributes_crate.begin( ), attributes_crate.end( ), 137 );
+			if ( tournament_id != attributes_crate.end( ) ) {
+				std::vector<int32_t> teams;
+				for ( auto& sticker : item_manager::stickers ) {
+					if ( sticker->get_event_id( ) == tournament_id->value ) {
+
+						if ( sticker->get_team_id( ) > 0 )
+							if ( std::find( teams.begin( ), teams.end( ), sticker->get_team_id( ) ) == teams.end( ) )
+								teams.push_back( sticker->get_team_id( ) );
+					}
+				}
+
+				for ( auto id : teams )
+					csgo_teams_filtered.push_back( { id, item_manager::csgo_teams[ id - 1 ] } );
+
+				tournament_id_val = tournament_id->value;
+			}
+		}
+	}
+
+	if ( team0_tournament_crate >= static_cast<int32_t>( csgo_teams_filtered.size( ) ) )
+		team0_tournament_crate = 0;
+
+	if ( team1_tournament_crate >= static_cast<int32_t>( csgo_teams_filtered.size( ) ) )
+		team1_tournament_crate = 0;
+
+	update_players( tournament_id_val );
+}
+
 void menu::draw( ) {
 	std::call_once( init_lists, [ & ] ( ) {
 		crate_list.init( item_manager::crates );
@@ -164,71 +237,22 @@ void menu::draw( ) {
 		if ( current_tab == 0 ) {
 			ImGui::Text( "=== Crate creator" );
 
-			if ( ImGui::InputText( "Filter##crate", crate_list.filter_buffer.data( ), crate_list.filter_buffer.size( ) ) )
+			if ( ImGui::InputText( "Filter##crate", crate_list.filter_buffer.data( ), crate_list.filter_buffer.size( ) ) ) {
 				crate_list.apply_filter_items( );
+				update_teams( );
+			}
 
 			if ( ImGui::ListBox( "Crates", &crate_list.current_item, vector_getter_item_definition, static_cast<void*>( &crate_list.items_filtered ), crate_list.items_filtered.size( ) ) ) {
-				csgo_teams_filtered.clear( );
-				csgo_players_filtered.clear( );
-
-				if ( crate_list.current_item < static_cast<int32_t>( crate_list.items_filtered.size( ) ) ) {
-					auto& crate_item = crate_list.items_filtered.at( crate_list.current_item );
-					auto attributes_crate = crate_item.item->get_attributes( );
-					auto is_tournament_crate = true;
-					auto supply_create_series = std::find( attributes_crate.begin( ), attributes_crate.end( ), 68 );
-					if ( supply_create_series != attributes_crate.end( ) ) {
-						auto name = csgo_sdk::get_item_schema( )->get_create_series_by_id( supply_create_series->value );
-						if ( name ) {
-							auto items = csgo_sdk::get_weapons_for_crate( name );
-							if ( items.front( ).sticker_id != 0 )
-								is_tournament_crate = false;
-						}
-					}
-
-					if ( is_tournament_crate ) {
-						auto tournament_id = std::find( attributes_crate.begin( ), attributes_crate.end( ), 137 );
-						if ( tournament_id != attributes_crate.end( ) ) {
-							std::vector<int32_t> teams;
-							std::vector<int32_t> players;
-							for ( auto& sticker : item_manager::stickers ) {
-								if ( sticker->get_event_id( ) == tournament_id->value ) {
-
-									if ( sticker->get_team_id( ) > 0 )
-										if ( std::find( teams.begin( ), teams.end( ), sticker->get_team_id( ) ) == teams.end( ) )
-											teams.push_back( sticker->get_team_id( ) );
-
-									if ( sticker->get_player_id( ) > 0 )
-										if ( std::find( players.begin( ), players.end( ), sticker->get_player_id( ) ) == players.end( ) )
-											players.push_back( sticker->get_player_id( ) );
-								}
-							}
-
-							for ( auto id : teams )
-								csgo_teams_filtered.push_back( { id, item_manager::csgo_teams[ id - 1 ] } );
-
-							csgo_players_filtered.push_back( { 0, "None" } );
-							for ( auto id : players )
-								csgo_players_filtered.push_back( { id, item_manager::csgo_players[ id ] } );
-						}
-					}
-				}
-				if ( team0_tournament_crate >= static_cast<int32_t>( csgo_teams_filtered.size( ) ) )
-					team0_tournament_crate = 0;
-
-				if ( team1_tournament_crate >= static_cast<int32_t>( csgo_teams_filtered.size( ) ) )
-					team1_tournament_crate = 0;
-
-				if ( player_tournament_crate >= static_cast<int32_t>( csgo_players_filtered.size( ) ) )
-					player_tournament_crate = 0;
-
-
+				update_teams( );
 			}
+			
 			ImGui::Separator( );
 
 			if ( crate_list.current_item < (int)crate_list.items_filtered.size( ) ) {
 				auto& crate_item = crate_list.items_filtered.at( crate_list.current_item );
 				auto attributes_crate = crate_item.item->get_attributes( );
-				auto is_tournament_crate = std::find( attributes_crate.begin( ), attributes_crate.end( ), 137 ) != attributes_crate.end( ) && !csgo_teams_filtered.empty( );
+				auto tournament_id = std::find( attributes_crate.begin( ), attributes_crate.end( ), 137);
+				auto is_tournament_crate = tournament_id != attributes_crate.end( ) && !csgo_teams_filtered.empty( );
 
 				ImGui::Checkbox( "Add key to open this crate", &add_key_to_crate );
 				ImGui::SliderInt( "Count", &crate_create_size, 1, 50 );
@@ -236,8 +260,8 @@ void menu::draw( ) {
 
 				if ( is_tournament_crate ) {
 					ImGui::ListBox( "Stage", &stage_tournament_crate, vector_getter, static_cast<void*>( &item_manager::tournament_event_stages ), item_manager::tournament_event_stages.size( ) ); ImGui::Separator( );
-					ImGui::ListBox( "Team 0", &team0_tournament_crate, vector_getter_pair, static_cast<void*>( &csgo_teams_filtered ), csgo_teams_filtered.size( ) ); ImGui::Separator( );
-					ImGui::ListBox( "Team 1", &team1_tournament_crate, vector_getter_pair, static_cast<void*>( &csgo_teams_filtered ), csgo_teams_filtered.size( ) ); ImGui::Separator( );
+					if ( ImGui::ListBox( "Team 0", &team0_tournament_crate, vector_getter_pair, static_cast<void*>( &csgo_teams_filtered ), csgo_teams_filtered.size( ) ) ) { update_players( tournament_id->value ); } ImGui::Separator( );
+					if ( ImGui::ListBox( "Team 1", &team1_tournament_crate, vector_getter_pair, static_cast<void*>( &csgo_teams_filtered ), csgo_teams_filtered.size( ) ) ) { update_players( tournament_id->value ); } ImGui::Separator( );
 					ImGui::ListBox( "Mvp player", &player_tournament_crate, vector_getter_pair, static_cast<void*>( &csgo_players_filtered ), csgo_players_filtered.size( ) ); ImGui::Separator( );
 				}
 

@@ -118,7 +118,7 @@ std::vector<std::pair<int32_t, std::string>> csgo_players_filtered;
 auto current_tab = 0;
 
 //fakeopneing
-float fakeopening_chances::knife_chance = 0.2f;
+float fakeopening_chances::knife_chance = 20.f;
 float fakeopening_chances::statstark_chance = 10.f;
 float fakeopening_chances::factory_new_chance = 14.f;
 
@@ -193,6 +193,19 @@ void update_teams( ) {
 		team1_tournament_crate = 0;
 
 	update_players( tournament_id_val );
+}
+
+static void help_mark( const char* desc )
+{
+	ImGui::TextDisabled( "(?)" );
+	if ( ImGui::IsItemHovered( ) )
+	{
+		ImGui::BeginTooltip( );
+		ImGui::PushTextWrapPos( ImGui::GetFontSize( ) * 35.0f );
+		ImGui::TextUnformatted( desc );
+		ImGui::PopTextWrapPos( );
+		ImGui::EndTooltip( );
+	}
 }
 
 void menu::draw( ) {
@@ -365,7 +378,8 @@ void menu::draw( ) {
 				}
 			}
 		} else if ( current_tab == 1 ) {
-			ImGui::SliderFloat( "Knife chance (more = better items)", &fakeopening_chances::knife_chance, 0.f, 100.f );
+			ImGui::SliderFloat( "Items chance", &fakeopening_chances::knife_chance, 0.f, 100.f );
+			ImGui::SameLine( ); help_mark( "more = better items, default value = valve chance" );
 			ImGui::SliderFloat( "Stattrak chance", &fakeopening_chances::statstark_chance, 0.f, 100.f );
 			ImGui::SliderFloat( "Factory new wear chance", &fakeopening_chances::factory_new_chance, 0.f, 100.f );
 		}

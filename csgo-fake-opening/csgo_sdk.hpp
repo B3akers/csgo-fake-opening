@@ -103,7 +103,7 @@ public:
 class econ_paint_kit_definition {
 public:
 	int32_t get_paint_kit( ) { return *reinterpret_cast<int32_t*>( std::uintptr_t( this ) ); }
-	int32_t get_rarity_value( ) { return *reinterpret_cast<int32_t*>( std::uintptr_t( this ) + 0x68 ); }
+	int32_t get_rarity_value( ) { return *reinterpret_cast<int32_t*>( std::uintptr_t( this ) + 0x78 ); }
 };
 
 class econ_item_definition {
